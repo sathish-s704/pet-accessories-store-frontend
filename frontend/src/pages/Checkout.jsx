@@ -8,18 +8,18 @@ import PayPalButton from '../components/PayPalButton';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const Checkout = () => {
-  const { cartItems, dispatch } = useCart();
+  const { cartItems = [], dispatch } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const isBuyNow = searchParams.get('buyNow') === 'true';
-  const totalAmount = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const totalAmount = cartItems?.reduce((acc, item) => acc + (item?.price || 0) * (item?.quantity || 0), 0) || 0;
 
   const getImageUrl = useCallback((product) => {
     if (product.imageUrl) {
@@ -38,12 +38,23 @@ const Checkout = () => {
       console.log('User token:', user?.token ? 'Present' : 'Missing');
       console.log('Total amount:', totalAmount);
       
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error('No items in cart');
+      }
+      
+      if (!user?.token) {
+        throw new Error('User not authenticated');
+      }
+      
       const orderData = {
         products: cartItems.map(item => {
           console.log('Processing cart item:', item);
+          if (!item._id) {
+            throw new Error('Invalid cart item - missing ID');
+          }
           return {
             product: item._id,
-            quantity: item.quantity
+            quantity: item.quantity || 1
           };
         }),
         totalAmount: totalAmount
@@ -64,9 +75,9 @@ const Checkout = () => {
       console.error('Error response data:', err.response?.data);
       console.error('Error status:', err.response?.status);
       
-      throw new Error('Failed to create order. Please try again.');
+      throw new Error(err.message || 'Failed to create order. Please try again.');
     }
-  }, [cartItems, totalAmount, user.token]);
+  }, [cartItems, totalAmount, user?.token]);
 
   const handlePayPalApprove = useCallback(async (orderData) => {
     console.log('=== PayPal Approve Handler Start ===');
@@ -120,7 +131,7 @@ const Checkout = () => {
       setPaymentProcessing(false);
       console.log('=== PayPal Approve Handler End ===');
     }
-  }, [createOrder, totalAmount, user.token, dispatch, navigate]);
+  }, [createOrder, totalAmount, user?.token, dispatch, navigate]);
 
   const handlePayPalError = useCallback((err) => {
     console.error('PayPal error:', err);
@@ -145,6 +156,8 @@ const Checkout = () => {
     console.log('Cart items:', cartItems);
     console.log('Is Buy Now:', isBuyNow);
     
+    setLoading(true);
+    
     if (!user) {
       console.log('No user found, redirecting to login');
       navigate('/login');
@@ -157,28 +170,63 @@ const Checkout = () => {
       return;
     }
 
-    if (cartItems.length === 0 && !isBuyNow) {
-      console.log('Cart is empty and not Buy Now, redirecting to cart');
-      navigate('/cart');
-      return;
-    }
-
-    // Special handling for Buy Now - if cart is empty, redirect back
-    if (cartItems.length === 0 && isBuyNow) {
-      console.log('Buy Now session expired - cart is empty');
-      setError('Buy Now session expired. Please try again.');
-      setTimeout(() => navigate('/products'), 2000);
-      return;
+    // Special handling for page refresh - check localStorage directly
+    if (!cartItems || cartItems.length === 0) {
+      console.log('Cart appears empty, checking localStorage directly...');
+      
+      try {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          console.log('Found cart in localStorage:', parsedCart);
+          
+          if (parsedCart && parsedCart.length > 0) {
+            console.log('Cart exists in localStorage, waiting for context to update...');
+            // Wait a bit for the context to catch up
+            setTimeout(() => {
+              setLoading(false);
+              setOrderId('ready');
+            }, 200);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error reading cart from localStorage:', error);
+      }
+      
+      // If we reach here, cart is truly empty
+      if (isBuyNow) {
+        console.log('Buy Now session expired - cart is empty');
+        setError('Buy Now session expired. Please try again.');
+        setTimeout(() => navigate('/products'), 2000);
+        return;
+      } else {
+        console.log('Cart is empty, redirecting to cart');
+        navigate('/cart');
+        return;
+      }
     }
 
     console.log('Checkout initialization successful');
     setLoading(false);
     setOrderId('ready'); // Set to ready state instead of creating order upfront
-  }, [user, cartItems.length, navigate, isBuyNow]);
+  }, [user, cartItems, navigate, isBuyNow]);
 
   useEffect(() => {
     initializeCheckout();
   }, [initializeCheckout]);
+
+  // Show loading spinner while checking authentication and cart
+  if (loading) {
+    return (
+      <Container className="py-5">
+        <div className="text-center">
+          <Spinner animation="border" />
+          <p className="mt-2">Loading checkout...</p>
+        </div>
+      </Container>
+    );
+  }
 
   if (!user) {
     return (
@@ -233,11 +281,11 @@ const Checkout = () => {
               <h4>{isBuyNow ? 'Product Details' : 'Order Summary'}</h4>
             </Card.Header>
             <Card.Body>
-              {cartItems.map((item, index) => (
-                <div key={index} className="d-flex align-items-center mb-3">
+              {cartItems && cartItems.length > 0 ? cartItems.map((item, index) => (
+                <div key={item?._id || index} className="d-flex align-items-center mb-3">
                   <img
                     src={getImageUrl(item)}
-                    alt={item.name}
+                    alt={item?.name || 'Product'}
                     className="me-3"
                     style={{ width: '60px', height: '60px', objectFit: 'cover' }}
                     onError={(e) => {
@@ -245,14 +293,18 @@ const Checkout = () => {
                     }}
                   />
                   <div className="flex-grow-1">
-                    <h6 className="mb-0">{item.name}</h6>
-                    <small className="text-muted">Quantity: {item.quantity}</small>
+                    <h6 className="mb-0">{item?.name || 'Unknown Product'}</h6>
+                    <small className="text-muted">Quantity: {item?.quantity || 1}</small>
                   </div>
                   <div className="text-end">
-                    <strong>₹{item.price * item.quantity}</strong>
+                    <strong>₹{(item?.price || 0) * (item?.quantity || 1)}</strong>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center">
+                  <p>No items in cart</p>
+                </div>
+              )}
               <hr />
               <div className="d-flex justify-content-between">
                 <h5>Total:</h5>

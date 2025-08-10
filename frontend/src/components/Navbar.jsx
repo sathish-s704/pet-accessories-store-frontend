@@ -386,41 +386,7 @@ function NavigationBar() {
         </Navbar.Collapse>
       </Container>
 
-      {/* Add custom styles */}
-      <style jsx>{`
-        .nav-icon:hover .icon-wrapper {
-          background: var(--primary-color) !important;
-          color: white !important;
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
-        }
-        
-        .nav-icon:hover .icon-wrapper svg {
-          color: white !important;
-        }
-        
-        .user-profile:hover {
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-md) !important;
-        }
-        
-        .dropdown-item-modern {
-          transition: all 0.3s ease;
-          border-radius: var(--border-radius);
-          margin: 0.125rem 0.5rem;
-        }
-        
-        .dropdown-item-modern:hover {
-          background: var(--gray-100);
-          color: var(--gray-800);
-          transform: translateX(4px);
-        }
-        
-        .modern-search:focus-within .form-control-modern {
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-      `}</style>
+      {/* CSS styles are handled in App.css or component-specific CSS files */}
     </Navbar>
   );
 }
