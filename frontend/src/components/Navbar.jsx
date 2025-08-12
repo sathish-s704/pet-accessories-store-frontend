@@ -17,7 +17,8 @@ import {
   FavoriteBorder,
   Logout,
   Dashboard,
-  StorefrontRounded
+  StorefrontRounded,
+  Star
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -318,26 +319,37 @@ function NavigationBar() {
 
                   {/* Hide wishlist for admin users */}
                   {user.role !== 'admin' && (
-                    <Dropdown.Item 
-                      onClick={(e) => {
-                        if (!user) {
-                          e.preventDefault();
-                          alert('Please login to view your wishlist!');
-                          return;
-                        }
-                      }}
-                      as={Link} 
-                      to="/wishlist"
-                      className="dropdown-item-modern d-flex align-items-center py-2 px-3"
-                    >
-                      <FavoriteBorder className="me-3" style={{ color: 'var(--secondary-color)' }} />
-                      My Wishlist
-                      {wishlist.length > 0 && (
-                        <Badge bg="warning" className="ms-auto">
-                          {wishlist.length}
-                        </Badge>
-                      )}
-                    </Dropdown.Item>
+                    <>
+                      <Dropdown.Item 
+                        onClick={(e) => {
+                          if (!user) {
+                            e.preventDefault();
+                            alert('Please login to view your wishlist!');
+                            return;
+                          }
+                        }}
+                        as={Link} 
+                        to="/wishlist"
+                        className="dropdown-item-modern d-flex align-items-center py-2 px-3"
+                      >
+                        <FavoriteBorder className="me-3" style={{ color: 'var(--secondary-color)' }} />
+                        My Wishlist
+                        {wishlist.length > 0 && (
+                          <Badge bg="warning" className="ms-auto">
+                            {wishlist.length}
+                          </Badge>
+                        )}
+                      </Dropdown.Item>
+
+                      <Dropdown.Item 
+                        as={Link} 
+                        to="/my-reviews"
+                        className="dropdown-item-modern d-flex align-items-center py-2 px-3"
+                      >
+                        <Star className="me-3" style={{ color: 'var(--warning-color)' }} />
+                        My Reviews
+                      </Dropdown.Item>
+                    </>
                   )}
 
                   {user.role === 'admin' && (

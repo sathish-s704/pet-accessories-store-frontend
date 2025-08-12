@@ -45,6 +45,16 @@ const Checkout = () => {
       if (!user?.token) {
         throw new Error('User not authenticated');
       }
+
+      // Validate stock before creating order
+      for (const item of cartItems) {
+        if (!item.inStock || item.totalStock === 0) {
+          throw new Error(`${item.name} is currently out of stock`);
+        }
+        if (item.quantity > item.totalStock) {
+          throw new Error(`Only ${item.totalStock} items available for ${item.name}, but ${item.quantity} requested`);
+        }
+      }
       
       const orderData = {
         products: cartItems.map(item => {

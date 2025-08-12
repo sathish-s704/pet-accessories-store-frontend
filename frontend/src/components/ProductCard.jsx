@@ -18,13 +18,21 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
   const { user } = useAuth();
 
   const addToCart = () => {
+    if (!product.inStock || product.totalStock === 0) {
+      alert(`${product.name} is currently out of stock`);
+      return;
+    }
     dispatch({ type: 'ADD_TO_CART', payload: product });
-    // You can add a toast notification here instead of alert
   };
 
   const buyNow = () => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+
+    if (!product.inStock || product.totalStock === 0) {
+      alert(`${product.name} is currently out of stock`);
       return;
     }
     
@@ -38,6 +46,10 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
     
     // Navigate directly to checkout with a buy-now flag
     navigate('/checkout?buyNow=true');
+  };
+
+  const viewProduct = () => {
+    navigate(`/product/${product._id}`);
   };
 
   const toggleWishlist = () => {
@@ -64,7 +76,9 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
 
   // Generate star rating display
   const renderStars = () => {
-    const rating = 4; // You can make this dynamic based on product rating
+    const rating = Math.round(product.averageRating || 0);
+    const reviewCount = product.reviewCount || 0;
+    
     return (
       <div className="d-flex align-items-center">
         {[...Array(5)].map((_, i) => (
@@ -82,7 +96,9 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
             />
           )
         ))}
-        <small className="text-muted ms-1">(4.0)</small>
+        <small className="text-muted ms-1">
+          ({product.averageRating ? product.averageRating.toFixed(1) : '0.0'}) · {reviewCount} review{reviewCount !== 1 ? 's' : ''}
+        </small>
       </div>
     );
   };
@@ -146,7 +162,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
                   ₹{product.price}
                 </span>
                 <span className={`badge ${product.inStock ? 'bg-success' : 'bg-danger'}`}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  {product.inStock ? `In Stock (${product.totalStock || 0})` : 'Out of Stock'}
                 </span>
               </div>
               {renderStars()}
@@ -186,7 +202,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
 
   return (
     <div className="product-card card-modern h-100 border-0 position-relative" data-aos="fade-up">
-      <div className="product-image">
+      <div className="product-image" onClick={viewProduct} style={{ cursor: 'pointer' }}>
         <img 
           src={getImageUrl()} 
           alt={product.name} 
@@ -202,7 +218,10 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
         
         {/* Wishlist Button */}
         <button
-          onClick={toggleWishlist}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist();
+          }}
           className="wishlist-btn position-absolute"
           style={{ 
             top: '12px',
@@ -229,7 +248,13 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
       </div>
       
       <div className="product-info">
-        <h3 className="product-title">{product.name}</h3>
+        <h3 
+          className="product-title" 
+          onClick={viewProduct} 
+          style={{ cursor: 'pointer' }}
+        >
+          {product.name}
+        </h3>
         
         {product.description && (
           <p className="product-description">
@@ -252,7 +277,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
         <div className="d-flex justify-content-between align-items-center mb-3">
           {renderStars()}
           <span className={`badge ${product.inStock ? 'bg-success' : 'bg-danger'}`}>
-            {product.inStock ? 'In Stock' : 'Out of Stock'}
+            {product.inStock ? `Stock: ${product.totalStock || 0}` : 'Out of Stock'}
           </span>
         </div>
         

@@ -36,6 +36,24 @@ export const createOrder = async (req, res) => {
         return res.status(400).json({ message: `Product ${item.product} not found` });
       }
 
+      const requestedQuantity = item.quantity || 1;
+
+      // Check if enough stock is available
+      if (prod.totalStock < requestedQuantity) {
+        console.error(`Insufficient stock for product ${prod.name}. Available: ${prod.totalStock}, Requested: ${requestedQuantity}`);
+        return res.status(400).json({ 
+          message: `Insufficient stock for ${prod.name}. Only ${prod.totalStock} items available.` 
+        });
+      }
+
+      // Check if product is in stock
+      if (!prod.inStock || prod.totalStock === 0) {
+        console.error(`Product ${prod.name} is out of stock`);
+        return res.status(400).json({ 
+          message: `${prod.name} is currently out of stock.` 
+        });
+      }
+
       console.log('Found product:', prod);
 
       snapshotProducts.push({
@@ -43,7 +61,7 @@ export const createOrder = async (req, res) => {
         name: prod.name,
         price: prod.price,
         imageUrl: prod.imageUrl,
-        quantity: item.quantity || 1
+        quantity: requestedQuantity
       });
     }
 
@@ -54,6 +72,23 @@ export const createOrder = async (req, res) => {
       products: snapshotProducts,
       totalAmount
     });
+
+    // Update stock for each product after successful order creation
+    for (const item of snapshotProducts) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        product.totalStock -= item.quantity;
+        
+        // Update inStock status based on remaining stock
+        if (product.totalStock <= 0) {
+          product.inStock = false;
+          product.totalStock = 0; // Ensure it doesn't go negative
+        }
+        
+        await product.save();
+        console.log(`Updated stock for ${product.name}: ${product.totalStock} remaining`);
+      }
+    }
 
     console.log('Order created successfully:', order);
     res.status(201).json(order);

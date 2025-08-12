@@ -44,6 +44,13 @@ const CartPage = () => {
                   <div>
                     <h6 className="mb-0">{item.name}</h6>
                     <p className="text-muted mb-0">₹{item.price} × {item.quantity}</p>
+                    <small className="text-muted">
+                      {item.totalStock > 0 ? (
+                        <span className="text-success">Stock: {item.totalStock} available</span>
+                      ) : (
+                        <span className="text-danger">Out of stock</span>
+                      )}
+                    </small>
                   </div>
                 </div>
                 <div className="d-flex align-items-center gap-2">
@@ -51,6 +58,7 @@ const CartPage = () => {
                     size="sm" 
                     variant="outline-secondary"
                     onClick={() => dispatch({ type: 'DECREMENT', payload: item._id })}
+                    disabled={item.quantity <= 1}
                   >
                     -
                   </Button>
@@ -59,6 +67,8 @@ const CartPage = () => {
                     size="sm" 
                     variant="outline-secondary"
                     onClick={() => dispatch({ type: 'INCREMENT', payload: item._id })}
+                    disabled={item.quantity >= item.totalStock || !item.inStock}
+                    title={item.quantity >= item.totalStock ? 'Stock limit reached' : ''}
                   >
                     +
                   </Button>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
+import axios from 'axios';
 
 const CartContext = createContext();
 
@@ -27,6 +28,11 @@ function cartReducer(state, action) {
       const existing = state.cartItems.find(item => item._id === action.payload._id);
       if (existing) {
         console.log('Incrementing existing item');
+        // Check stock before incrementing
+        if (existing.quantity >= action.payload.totalStock) {
+          console.warn('Cannot add more items - stock limit reached');
+          return state; // Don't modify state if stock limit reached
+        }
         return {
           ...state,
           cartItems: state.cartItems.map(item =>
@@ -37,6 +43,11 @@ function cartReducer(state, action) {
         };
       } else {
         console.log('Adding new item to cart');
+        // Check if product is in stock
+        if (!action.payload.inStock || action.payload.totalStock === 0) {
+          console.warn('Cannot add item - out of stock');
+          return state; // Don't add if out of stock
+        }
         return {
           ...state,
           cartItems: [...state.cartItems, { ...action.payload, quantity: 1 }],
@@ -50,11 +61,17 @@ function cartReducer(state, action) {
     case 'INCREMENT':
       return {
         ...state,
-        cartItems: state.cartItems.map(item =>
-          item._id === action.payload
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        ),
+        cartItems: state.cartItems.map(item => {
+          if (item._id === action.payload) {
+            // Check stock before incrementing
+            if (item.quantity >= item.totalStock) {
+              console.warn('Cannot increment - stock limit reached');
+              return item; // Don't increment if stock limit reached
+            }
+            return { ...item, quantity: item.quantity + 1 };
+          }
+          return item;
+        }),
       };
     case 'DECREMENT':
       return {
@@ -62,6 +79,24 @@ function cartReducer(state, action) {
         cartItems: state.cartItems.map(item =>
           item._id === action.payload && item.quantity > 1
             ? { ...item, quantity: item.quantity - 1 }
+            : item
+        ),
+      };
+    case 'UPDATE_QUANTITY':
+      return {
+        ...state,
+        cartItems: state.cartItems.map(item =>
+          item._id === action.payload.id
+            ? { ...item, quantity: action.payload.quantity }
+            : item
+        ),
+      };
+    case 'UPDATE_PRODUCT_STOCK':
+      return {
+        ...state,
+        cartItems: state.cartItems.map(item =>
+          item._id === action.payload.id
+            ? { ...item, totalStock: action.payload.totalStock, inStock: action.payload.inStock }
             : item
         ),
       };
@@ -87,9 +122,50 @@ export const CartProvider = ({ children }) => {
       console.error('Error saving cart to localStorage:', error);
     }
   }, [state.cartItems]);
+
+  // Enhanced dispatch function with API integration and stock validation
+  const enhancedDispatch = async (action) => {
+    try {
+      switch (action.type) {
+        case 'ADD_TO_CART':
+          // Check current stock from the product data
+          const product = action.payload;
+          const existingItem = state.cartItems.find(item => item._id === product._id);
+          
+          if (existingItem && existingItem.quantity >= product.totalStock) {
+            alert(`Cannot add more items. Only ${product.totalStock} items available for ${product.name}`);
+            return;
+          }
+          
+          if (!product.inStock || product.totalStock === 0) {
+            alert(`${product.name} is currently out of stock`);
+            return;
+          }
+          
+          dispatch(action);
+          break;
+
+        case 'INCREMENT':
+          const itemToIncrement = state.cartItems.find(item => item._id === action.payload);
+          if (itemToIncrement && itemToIncrement.quantity >= itemToIncrement.totalStock) {
+            alert(`Cannot add more items. Only ${itemToIncrement.totalStock} items available for ${itemToIncrement.name}`);
+            return;
+          }
+          dispatch(action);
+          break;
+
+        default:
+          dispatch(action);
+          break;
+      }
+    } catch (error) {
+      console.error('Error in cart action:', error);
+      alert('Error updating cart. Please try again.');
+    }
+  };
   
   return (
-    <CartContext.Provider value={{ cartItems: state.cartItems, dispatch }}>
+    <CartContext.Provider value={{ cartItems: state.cartItems, dispatch: enhancedDispatch }}>
       {children}
     </CartContext.Provider>
   );

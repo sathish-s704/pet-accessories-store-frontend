@@ -6,6 +6,7 @@ import NavigationBar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
 import CartPage from './pages/cartPage';
 import Checkout from './pages/Checkout';
 import ProductCheckout from './pages/ProductCheckout';
@@ -20,6 +21,7 @@ import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
+import MyReviews from './pages/MyReviews';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminUsers from './pages/AdminUsers';
@@ -37,6 +39,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/products" element={<Products />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/product-checkout" element={<ProductCheckout />} />
@@ -55,6 +58,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/wishlist" element={<Wishlist />} />
+      <Route path="/my-reviews" element={<MyReviews />} />
       <Route path="/contact" element={<Contact />} />
     </Routes>
   );

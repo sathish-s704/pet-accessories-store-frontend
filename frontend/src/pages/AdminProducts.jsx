@@ -68,7 +68,6 @@ function AdminProducts() {
       category: '', 
       description: '', 
       totalStock: '', 
-      inStock: true, 
       image: null 
     });
     setEditingProductId(null);
@@ -85,7 +84,6 @@ function AdminProducts() {
       category: '', 
       description: '', 
       totalStock: '', 
-      inStock: true, 
       image: null 
     });
     setShowModal(true);
@@ -102,7 +100,6 @@ function AdminProducts() {
       category: product.category || '',
       description: product.description || '',
       totalStock: (product.totalStock || 0).toString(),
-      inStock: product.inStock !== false,
       image: null
     });
     setShowModal(true);
@@ -133,7 +130,7 @@ function AdminProducts() {
       data.append('category', formData.category);
       data.append('description', formData.description);
       data.append('totalStock', formData.totalStock);
-      data.append('inStock', formData.inStock);
+      // Remove inStock from form data - it will be auto-managed by backend
       if (formData.image) {
         data.append('image', formData.image);
       }
@@ -147,7 +144,6 @@ function AdminProducts() {
         category: formData.category,
         description: formData.description,
         totalStock: formData.totalStock,
-        inStock: formData.inStock,
         editingProductId
       });
 
@@ -350,6 +346,9 @@ function AdminProducts() {
                     required
                     placeholder="Enter total stock quantity"
                   />
+                  <Form.Text className="text-muted">
+                    Stock status will be automatically managed based on quantity
+                  </Form.Text>
                 </Form.Group>
               </Col>
               <Col md={6}>
@@ -378,13 +377,20 @@ function AdminProducts() {
               />
             </Form.Group>
 
+            {/* Show current stock status (read-only) */}
             <Form.Group className="mb-3">
-              <Form.Check
-                type="checkbox"
-                label="Product is in stock"
-                checked={formData.inStock}
-                onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
-              />
+              <Form.Label>Stock Status</Form.Label>
+              <div className="d-flex align-items-center">
+                <span className={`badge ${parseInt(formData.totalStock) > 0 ? 'bg-success' : 'bg-danger'} me-2`}>
+                  {parseInt(formData.totalStock) > 0 ? 'In Stock' : 'Out of Stock'}
+                </span>
+                <small className="text-muted">
+                  {parseInt(formData.totalStock) > 0 
+                    ? `${formData.totalStock} items available`
+                    : 'Add stock to make this product available'
+                  }
+                </small>
+              </div>
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>

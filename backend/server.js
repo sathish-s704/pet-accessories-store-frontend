@@ -12,6 +12,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import contactRoutes from './routes/contactRoutes.js';
 import adminRoutes from "./routes/adminRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 const app = express();
@@ -28,11 +29,9 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/paypal", paymentRoutes);
 app.use('/api/contact', contactRoutes);
-
 app.use("/api/admin", adminRoutes);
-
-
 app.use("/api/products", productRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Resolve __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
